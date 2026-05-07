@@ -5,6 +5,7 @@ import Topbar from '@/components/layout/Topbar'
 import { useEffect } from 'react'
 import { SectionCard, ProgressBar, StatMini } from '@/components/ui'
 import { programs as initialPrograms, Program } from '@/lib/data'
+import { programApi} from '@/lib/api'
 import {
   Plus, Search, Award, Users, Calendar, X, Settings,
   Edit3, Trash2, ChevronLeft, BookOpen, MapPin,
