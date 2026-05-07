@@ -1,11 +1,11 @@
 'use client'
-import { useState } from 'react'
+
+import { useEffect, useState } from 'react'
 import AppShell from '@/components/layout/AppShell'
 import Topbar from '@/components/layout/Topbar'
-import { useEffect } from 'react'
 import { SectionCard, ProgressBar, StatMini } from '@/components/ui'
-import { programs as initialPrograms, Program } from '@/lib/data'
-import { programApi} from '@/lib/api'
+import { Program } from '@/lib/data'
+import { programApi } from '@/lib/api'
 import {
   Plus, Search, Award, Users, Calendar, X, Settings,
   Edit3, Trash2, ChevronLeft, BookOpen, MapPin,
@@ -15,7 +15,16 @@ import {
 // ─────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────
-const PROGRAM_TYPES = ['Semester Exchange', 'Summer School', 'Joint Degree', 'Research Fellowship', 'Internship'] as const
+const PROGRAM_TYPES = [
+  'SEMESTER_EXCHANGE',
+  'SUMMER_SCHOOL',
+  'JOINT_DEGREE',
+  'RESEARCH_FELLOWSHIP',
+  'INTERNSHIP'
+] as const
+
+type ProgramType = typeof PROGRAM_TYPES[number]
+
 const FIELD_TYPES   = ['Text', 'Number', 'Dropdown', 'Date', 'File', 'Checkbox'] as const
 type FieldType = typeof FIELD_TYPES[number]
 
@@ -73,7 +82,17 @@ const defaultStudentFields: FieldDef[] = [
 function genId(prefix = 'x') { return prefix + Math.random().toString(36).slice(2, 8) }
 
 function blankProgram(): Omit<Program, 'id'> {
-  return { name: '', type: 'Semester Exchange', partnerUniversity: '', country: '', seats: 20, enrolled: 0, deadline: new Date().toISOString().split('T')[0], duration: '1 Semester', scholarshipAvailable: false }
+  return {
+    name: '',
+    type: 'SEMESTER_EXCHANGE',
+    partnerUniversity: '',
+    country: '',
+    seats: 20,
+    enrolled: 0,
+    deadline: new Date().toISOString().split('T')[0],
+    duration: '1 Semester',
+    scholarshipAvailable: false
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -113,6 +132,14 @@ function InlineEdit({ value, onSave, size = 'md' }: { value: string; onSave: (v:
 // ─────────────────────────────────────────────────────────────
 // Cell renderer – renders a program field by key
 // ─────────────────────────────────────────────────────────────
+function formatProgramType(type: ProgramType) {
+  return type
+    .toLowerCase()
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
 function ProgramCell({ col, prog }: { col: ColDef; prog: Program }) {
   const tc = typeColors[prog.type] || '#2563EB'
   switch (col.fieldKey) {
@@ -130,7 +157,7 @@ function ProgramCell({ col, prog }: { col: ColDef; prog: Program }) {
     case 'country':
       return <span style={{ fontSize: 12.5, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}><MapPin size={11} />{prog.country}</span>
     case 'type':
-      return <span style={{ background: `${tc}15`, color: tc, border: `1px solid ${tc}30`, fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>{prog.type}</span>
+      return <span style={{ background: `${tc}15`, color: tc, border: `1px solid ${tc}30`, fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>{formatProgramType(prog.type)}</span>
     case 'seats':
       return <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}><Users size={12} color="#8593A8" /><span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{prog.enrolled}/{prog.seats}</span></span>
     case 'deadline':
@@ -156,6 +183,7 @@ export default function ProgramsPage() {
   useEffect(() => {
 
     async function fetchPrograms() {
+
       try {
 
         const data = await programApi.list({
@@ -164,27 +192,23 @@ export default function ProgramsPage() {
 
         const list = data?.content || [];
 
-        const mapped = list.map(p => ({
+        const mapped: Program[] = list.map(p => ({
           id: p.id,
           name: p.name,
-          partnerUniversity: p.partnerUniversity,
-          country: p.countryCode,
-          type:
-            p.type === "SEMESTER_EXCHANGE"
-              ? "Semester Exchange"
-              : p.type === "RESEARCH_FELLOWSHIP"
-              ? "Research Fellowship"
-              : p.type,
-          seats: p.seats,
-          enrolled: p.enrolled,
-          deadline: p.deadline,
-          duration: p.durationLabel,
-          scholarshipAvailable: p.scholarshipAvailable
-        }));
+          partnerUniversity: p.partnerUniversity ?? '',
+          country: p.countryCode ?? '',
+          type: p.type,
+          seats: p.seats ?? 0,
+          enrolled: p.enrolled ?? 0,
+          deadline: p.deadline ?? '',
+          duration: p.durationLabel ?? '',
+          scholarshipAvailable: p.scholarshipAvailable ?? false
+        }))
 
         setPrograms(mapped);
 
       } catch (err) {
+
         console.error(err);
         setPrograms([]);
       }
@@ -226,14 +250,18 @@ export default function ProgramsPage() {
   const types   = ['All', ...PROGRAM_TYPES]
   const visibleCols = columns.filter(c => c.visible)
 
-  const filtered = programs.filter(p => {
-  const q = search.toLowerCase();
+const filtered = programs.filter(p => {
+
+  const q = search.toLowerCase()
+
   return (
-    (p.name?.toLowerCase().includes(q) ||
-     p.partnerUniversity?.toLowerCase().includes(q)) &&
-    (typeFilter === "All" || p.type === typeFilter)
-  );
-});
+    (
+      (p.name ?? '').toLowerCase().includes(q) ||
+      (p.partnerUniversity ?? '').toLowerCase().includes(q)
+    ) &&
+    (typeFilter === 'All' || p.type === typeFilter)
+  )
+})
 
   // get heading for a fieldKey (used in modals so labels rename too)
   function h(key: string) {
@@ -262,6 +290,14 @@ export default function ProgramsPage() {
     setShowAddCol(false)
   }
 
+function formatProgramType(type: ProgramType) {
+
+  return type
+    .toLowerCase()
+    .split("_")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
   // ── Field helpers ─────────────────────────────────────────────
   function updateField(id: string, patch: Partial<FieldDef>) { setFields(prev => prev.map(f => f.id === id ? { ...f, ...patch } : f)) }
   function moveField(id: string, dir: 'up' | 'down') {
@@ -287,23 +323,23 @@ export default function ProgramsPage() {
 async function handleAddProgram() {
 
   if (!newProgram.name.trim()) {
-    setAddError(`${h('name')} is required.`);
-    return;
+    setAddError(`${h('name')} is required.`)
+    return
   }
 
   if (!newProgram.partnerUniversity.trim()) {
-    setAddError(`${h('partnerUniversity')} is required.`);
-    return;
+    setAddError(`${h('partnerUniversity')} is required.`)
+    return
   }
 
   if (!newProgram.country.trim()) {
-    setAddError(`${h('country')} is required.`);
-    return;
+    setAddError(`${h('country')} is required.`)
+    return
   }
 
   if (newProgram.seats < 1) {
-    setAddError(`${h('seats')} must be at least 1.`);
-    return;
+    setAddError(`${h('seats')} must be at least 1.`)
+    return
   }
 
   try {
@@ -318,55 +354,125 @@ async function handleAddProgram() {
       deadline: newProgram.deadline,
       durationLabel: newProgram.duration,
       scholarshipAvailable: newProgram.scholarshipAvailable
-    };
+    }
 
-    const created = await programApi.create(payload);
+    const created = await programApi.create(payload)
 
-    const mappedProgram = {
+    const mappedProgram: Program = {
       id: created.id,
       name: created.name,
-      partnerUniversity: created.partnerUniversity,
-      country: created.countryCode,
-      type:
-        created.type === "SEMESTER_EXCHANGE"
-          ? "Semester Exchange"
-          : created.type === "RESEARCH_FELLOWSHIP"
-          ? "Research Fellowship"
-          : created.type,
-      seats: created.seats,
-      enrolled: created.enrolled,
-      deadline: created.deadline,
-      duration: created.durationLabel,
-      scholarshipAvailable: created.scholarshipAvailable
-    };
+      partnerUniversity: created.partnerUniversity ?? '',
+      country: created.countryCode ?? '',
+      type: created.type,
+      seats: created.seats ?? 0,
+      enrolled: created.enrolled ?? 0,
+      deadline: created.deadline ?? '',
+      duration: created.durationLabel ?? '',
+      scholarshipAvailable: created.scholarshipAvailable ?? false
+    }
 
-    setPrograms(prev => [...prev, mappedProgram]);
+    setPrograms(prev => [...prev, mappedProgram])
 
-    setNewProgram(blankProgram());
-    setAddError('');
-    setShowAddProgram(false);
+    setNewProgram(blankProgram())
+    setAddError('')
+    setShowAddProgram(false)
 
   } catch (err) {
 
-    console.error("Failed to create program", err);
-    setAddError("Failed to create program.");
+    console.error('Failed to create program', err)
+    setAddError('Failed to create program.')
   }
 }
+async function handleSaveEdit() {
 
-  function handleSaveEdit() {
-    if (!editingProgram) return
-    if (!editingProgram.name.trim())              { setEditError(`${h('name')} is required.`); return }
-    if (!editingProgram.partnerUniversity.trim()) { setEditError(`${h('partnerUniversity')} is required.`); return }
-    if (!editingProgram.country.trim())           { setEditError(`${h('country')} is required.`); return }
-    if (editingProgram.seats < 1)                 { setEditError(`${h('seats')} must be at least 1.`); return }
-    setPrograms(prev => prev.map(p => p.id === editingProgram.id ? editingProgram : p))
-    setSelected(editingProgram); setEditingProgram(null); setEditError('')
+  if (!editingProgram) return
+
+  if (!editingProgram.name.trim()) {
+    setEditError(`${h('name')} is required.`)
+    return
   }
-  function handleDelete(prog: Program) {
-    setPrograms(prev => prev.filter(p => p.id !== prog.id))
-    if (selected?.id === prog.id) setSelected(null)
+
+  if (!editingProgram.partnerUniversity.trim()) {
+    setEditError(`${h('partnerUniversity')} is required.`)
+    return
+  }
+
+  if (!editingProgram.country.trim()) {
+    setEditError(`${h('country')} is required.`)
+    return
+  }
+
+  if (editingProgram.seats < 1) {
+    setEditError(`${h('seats')} must be at least 1.`)
+    return
+  }
+
+  try {
+
+    const payload = {
+      name: editingProgram.name,
+      partnerUniversity: editingProgram.partnerUniversity,
+      countryCode: editingProgram.country,
+      type: editingProgram.type,
+      seats: editingProgram.seats,
+      enrolled: editingProgram.enrolled,
+      deadline: editingProgram.deadline,
+      durationLabel: editingProgram.duration,
+      scholarshipAvailable: editingProgram.scholarshipAvailable
+    }
+
+    const updated = await programApi.update(editingProgram.id, payload)
+
+    const mappedProgram: Program = {
+      id: updated.id,
+      name: updated.name,
+      partnerUniversity: updated.partnerUniversity ?? '',
+      country: updated.countryCode ?? '',
+      type: updated.type,
+      seats: updated.seats ?? 0,
+      enrolled: updated.enrolled ?? 0,
+      deadline: updated.deadline ?? '',
+      duration: updated.durationLabel ?? '',
+      scholarshipAvailable: updated.scholarshipAvailable ?? false
+    }
+
+    setPrograms(prev =>
+      prev.map(p =>
+        p.id === editingProgram.id ? mappedProgram : p
+      )
+    )
+
+    setSelected(mappedProgram)
+    setEditingProgram(null)
+    setEditError('')
+
+  } catch (err) {
+
+    console.error('Update failed', err)
+    setEditError('Failed to update program.')
+  }
+}
+async function handleDelete(prog: Program) {
+
+  try {
+
+    await programApi.delete(prog.id)
+
+    setPrograms(prev =>
+      prev.filter(p => p.id !== prog.id)
+    )
+
+    if (selected?.id === prog.id) {
+      setSelected(null)
+    }
+
     setConfirmDelete(null)
+
+  } catch (err) {
+
+    console.error('Delete failed', err)
   }
+}
 
   // flash helpers
   function flashCol()   { setColSaveFlash(true);   setTimeout(() => setColSaveFlash(false),   2000) }
@@ -756,7 +862,11 @@ async function handleAddProgram() {
                 <div>
                   <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>{h('type')} <span style={{ color: '#E11D48' }}>*</span></label>
                   <select className="nx-input" style={{ width: '100%' }} value={newProgram.type} onChange={e => setNewProgram({ ...newProgram, type: e.target.value as Program['type'] })}>
-                    {PROGRAM_TYPES.map(t => <option key={t}>{t}</option>)}
+                    {PROGRAM_TYPES.map(t => (
+                      <option key={t} value={t}>
+                        {formatProgramType(t)}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>

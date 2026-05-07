@@ -78,11 +78,11 @@ export const students: Student[] = [
 ]
 
 export const programs: Program[] = [
-  { id: 'pr1', name: 'European Exchange Semester', type: 'Semester Exchange', partnerUniversity: 'TU Munich', country: 'Germany', seats: 20, enrolled: 15, deadline: '2026-04-30', duration: '1 Semester', scholarshipAvailable: true },
-  { id: 'pr2', name: 'Asia-Pacific Mobility', type: 'Semester Exchange', partnerUniversity: 'NUS Singapore', country: 'Singapore', seats: 15, enrolled: 12, deadline: '2026-05-15', duration: '1 Semester', scholarshipAvailable: true },
-  { id: 'pr3', name: 'Paris Summer Intensive', type: 'Summer School', partnerUniversity: 'Sorbonne', country: 'France', seats: 30, enrolled: 24, deadline: '2026-03-31', duration: '6 weeks', scholarshipAvailable: false },
-  { id: 'pr4', name: 'UK Research Fellowship', type: 'Research Fellowship', partnerUniversity: 'University of Leeds', country: 'UK', seats: 8, enrolled: 3, deadline: '2026-06-01', duration: '3 months', scholarshipAvailable: true },
-  { id: 'pr5', name: 'Swiss Engineering Program', type: 'Joint Degree', partnerUniversity: 'ETH Zurich', country: 'Switzerland', seats: 10, enrolled: 7, deadline: '2026-07-01', duration: '2 years', scholarshipAvailable: true },
+//   { id: 'pr1', name: 'European Exchange Semester', type: 'Semester Exchange', partnerUniversity: 'TU Munich', country: 'Germany', seats: 20, enrolled: 15, deadline: '2026-04-30', duration: '1 Semester', scholarshipAvailable: true },
+//   { id: 'pr2', name: 'Asia-Pacific Mobility', type: 'Semester Exchange', partnerUniversity: 'NUS Singapore', country: 'Singapore', seats: 15, enrolled: 12, deadline: '2026-05-15', duration: '1 Semester', scholarshipAvailable: true },
+//   { id: 'pr3', name: 'Paris Summer Intensive', type: 'Summer School', partnerUniversity: 'Sorbonne', country: 'France', seats: 30, enrolled: 24, deadline: '2026-03-31', duration: '6 weeks', scholarshipAvailable: false },
+//   { id: 'pr4', name: 'UK Research Fellowship', type: 'Research Fellowship', partnerUniversity: 'University of Leeds', country: 'UK', seats: 8, enrolled: 3, deadline: '2026-06-01', duration: '3 months', scholarshipAvailable: true },
+//   { id: 'pr5', name: 'Swiss Engineering Program', type: 'Joint Degree', partnerUniversity: 'ETH Zurich', country: 'Switzerland', seats: 10, enrolled: 7, deadline: '2026-07-01', duration: '2 years', scholarshipAvailable: true },
 ]
 
 export const documents: Document[] = [
