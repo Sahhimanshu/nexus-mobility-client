@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import AppShell from '@/components/layout/AppShell'
 import Topbar from '@/components/layout/Topbar'
+import { useEffect } from 'react'
 import { SectionCard, ProgressBar, StatMini } from '@/components/ui'
 import { programs as initialPrograms, Program } from '@/lib/data'
 import {
@@ -151,7 +152,48 @@ function ProgramCell({ col, prog }: { col: ColDef; prog: Program }) {
 // ─────────────────────────────────────────────────────────────
 export default function ProgramsPage() {
   // programs state
-  const [programs, setPrograms]               = useState<Program[]>(initialPrograms)
+  useEffect(() => {
+
+    async function fetchPrograms() {
+      try {
+
+        const data = await programApi.list({
+          tenantId: "75138fb1-fad9-4322-9153-2d47ecae2daa"
+        });
+
+        const list = data?.content || [];
+
+        const mapped = list.map(p => ({
+          id: p.id,
+          name: p.name,
+          partnerUniversity: p.partnerUniversity,
+          country: p.countryCode,
+          type:
+            p.type === "SEMESTER_EXCHANGE"
+              ? "Semester Exchange"
+              : p.type === "RESEARCH_FELLOWSHIP"
+              ? "Research Fellowship"
+              : p.type,
+          seats: p.seats,
+          enrolled: p.enrolled,
+          deadline: p.deadline,
+          duration: p.durationLabel,
+          scholarshipAvailable: p.scholarshipAvailable
+        }));
+
+        setPrograms(mapped);
+
+      } catch (err) {
+        console.error(err);
+        setPrograms([]);
+      }
+    }
+
+    fetchPrograms();
+
+  }, []);
+
+  const [programs, setPrograms] = useState<Program[]>([])
   const [search, setSearch]                   = useState('')
   const [typeFilter, setTypeFilter]           = useState('All')
   const [activeTab, setActiveTab]             = useState<'programs' | 'config'>('programs')
@@ -184,10 +226,13 @@ export default function ProgramsPage() {
   const visibleCols = columns.filter(c => c.visible)
 
   const filtered = programs.filter(p => {
-    const q = search.toLowerCase()
-    return (p.name.toLowerCase().includes(q) || p.partnerUniversity.toLowerCase().includes(q)) &&
-      (typeFilter === 'All' || p.type === typeFilter)
-  })
+  const q = search.toLowerCase();
+  return (
+    (p.name?.toLowerCase().includes(q) ||
+     p.partnerUniversity?.toLowerCase().includes(q)) &&
+    (typeFilter === "All" || p.type === typeFilter)
+  );
+});
 
   // get heading for a fieldKey (used in modals so labels rename too)
   function h(key: string) {
@@ -238,14 +283,75 @@ export default function ProgramsPage() {
   }
 
   // ── Program CRUD ─────────────────────────────────────────────
-  function handleAddProgram() {
-    if (!newProgram.name.trim())               { setAddError(`${h('name')} is required.`); return }
-    if (!newProgram.partnerUniversity.trim())  { setAddError(`${h('partnerUniversity')} is required.`); return }
-    if (!newProgram.country.trim())            { setAddError(`${h('country')} is required.`); return }
-    if (newProgram.seats < 1)                  { setAddError(`${h('seats')} must be at least 1.`); return }
-    setPrograms(prev => [...prev, { ...newProgram, id: genId('pr') }])
-    setNewProgram(blankProgram()); setAddError(''); setShowAddProgram(false)
+async function handleAddProgram() {
+
+  if (!newProgram.name.trim()) {
+    setAddError(`${h('name')} is required.`);
+    return;
   }
+
+  if (!newProgram.partnerUniversity.trim()) {
+    setAddError(`${h('partnerUniversity')} is required.`);
+    return;
+  }
+
+  if (!newProgram.country.trim()) {
+    setAddError(`${h('country')} is required.`);
+    return;
+  }
+
+  if (newProgram.seats < 1) {
+    setAddError(`${h('seats')} must be at least 1.`);
+    return;
+  }
+
+  try {
+
+    const payload = {
+      name: newProgram.name,
+      partnerUniversity: newProgram.partnerUniversity,
+      countryCode: newProgram.country,
+      type: newProgram.type,
+      seats: newProgram.seats,
+      enrolled: newProgram.enrolled,
+      deadline: newProgram.deadline,
+      durationLabel: newProgram.duration,
+      scholarshipAvailable: newProgram.scholarshipAvailable
+    };
+
+    const created = await programApi.create(payload);
+
+    const mappedProgram = {
+      id: created.id,
+      name: created.name,
+      partnerUniversity: created.partnerUniversity,
+      country: created.countryCode,
+      type:
+        created.type === "SEMESTER_EXCHANGE"
+          ? "Semester Exchange"
+          : created.type === "RESEARCH_FELLOWSHIP"
+          ? "Research Fellowship"
+          : created.type,
+      seats: created.seats,
+      enrolled: created.enrolled,
+      deadline: created.deadline,
+      duration: created.durationLabel,
+      scholarshipAvailable: created.scholarshipAvailable
+    };
+
+    setPrograms(prev => [...prev, mappedProgram]);
+
+    setNewProgram(blankProgram());
+    setAddError('');
+    setShowAddProgram(false);
+
+  } catch (err) {
+
+    console.error("Failed to create program", err);
+    setAddError("Failed to create program.");
+  }
+}
+
   function handleSaveEdit() {
     if (!editingProgram) return
     if (!editingProgram.name.trim())              { setEditError(`${h('name')} is required.`); return }
