@@ -1,6 +1,6 @@
 export type PartnershipStatus = 'Active' | 'Expiring' | 'Expired' | 'Pending'
 export type StudentStatus = 'On Exchange' | 'Approved' | 'Completed' | 'Pending'
-export type ProgramType = 'Semester Exchange' | 'Summer School' | 'Joint Degree' | 'Research Fellowship' | 'Internship'
+export type ProgramType = | 'SEMESTER_EXCHANGE' | 'SUMMER_SCHOOL' | 'JOINT_DEGREE' | 'RESEARCH_FELLOWSHIP'| 'INTERNSHIP'
 
 export interface Partnership {
   id: string
