@@ -975,7 +975,7 @@ async function handleDelete(prog: Program) {
               </div>
               <div style={{ display: 'flex', gap: 10, paddingTop: 2 }}>
                 <button className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={() => { setEditingProgram(null); setEditError('') }}>Cancel</button>
-                <button className="btn-primary" style={{ flex: 1, justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleSaveEdit}><Save size={13} /> Save Changes</button>
+                <button className="btn-primary" style={{ flex: 1, justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6 }} onClick={handleSaveEdit}  type="button"><Save size={13} /> Save Changes</button>
               </div>
             </div>
           </div>
