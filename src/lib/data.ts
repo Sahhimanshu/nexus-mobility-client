@@ -69,12 +69,12 @@ export const partnerships: Partnership[] = [
 ]
 
 export const students: Student[] = [
-  { id: 's1', name: 'Alice Johnson', email: 'alice@example.com', homeUniversity: 'Global University', hostUniversity: 'TU Munich', hostCountry: 'Germany', program: 'Semester Exchange', status: 'On Exchange', semester: 'Spring 2026', gpa: 3.8 },
-  { id: 's2', name: 'Bob Smith', email: 'bob@example.com', homeUniversity: 'Global University', hostUniversity: 'NUS Singapore', hostCountry: 'Singapore', program: 'Semester Exchange', status: 'Approved', semester: 'Fall 2026', gpa: 3.6 },
-  { id: 's3', name: 'Charlie Davis', email: 'charlie@example.com', homeUniversity: 'Global University', hostUniversity: 'Sorbonne', hostCountry: 'France', program: 'Summer School', status: 'Completed', semester: 'Summer 2025', gpa: 3.9 },
-  { id: 's4', name: 'Diana Patel', email: 'diana@example.com', homeUniversity: 'Global University', hostUniversity: 'University of Leeds', hostCountry: 'UK', program: 'Research Fellowship', status: 'On Exchange', semester: 'Spring 2026', gpa: 3.7 },
-  { id: 's5', name: 'Ethan Kim', email: 'ethan@example.com', homeUniversity: 'Global University', hostUniversity: 'NYU', hostCountry: 'USA', program: 'Semester Exchange', status: 'Pending', semester: 'Fall 2026', gpa: 3.5 },
-  { id: 's6', name: 'Fatima Al-Rashid', email: 'fatima@example.com', homeUniversity: 'Global University', hostUniversity: 'ETH Zurich', hostCountry: 'Switzerland', program: 'Joint Degree', status: 'Approved', semester: 'Spring 2026', gpa: 4.0 },
+//   { id: 's1', name: 'Alice Johnson', email: 'alice@example.com', homeUniversity: 'Global University', hostUniversity: 'TU Munich', hostCountry: 'Germany', program: 'Semester Exchange', status: 'On Exchange', semester: 'Spring 2026', gpa: 3.8 },
+//   { id: 's2', name: 'Bob Smith', email: 'bob@example.com', homeUniversity: 'Global University', hostUniversity: 'NUS Singapore', hostCountry: 'Singapore', program: 'Semester Exchange', status: 'Approved', semester: 'Fall 2026', gpa: 3.6 },
+//   { id: 's3', name: 'Charlie Davis', email: 'charlie@example.com', homeUniversity: 'Global University', hostUniversity: 'Sorbonne', hostCountry: 'France', program: 'Summer School', status: 'Completed', semester: 'Summer 2025', gpa: 3.9 },
+//   { id: 's4', name: 'Diana Patel', email: 'diana@example.com', homeUniversity: 'Global University', hostUniversity: 'University of Leeds', hostCountry: 'UK', program: 'Research Fellowship', status: 'On Exchange', semester: 'Spring 2026', gpa: 3.7 },
+//   { id: 's5', name: 'Ethan Kim', email: 'ethan@example.com', homeUniversity: 'Global University', hostUniversity: 'NYU', hostCountry: 'USA', program: 'Semester Exchange', status: 'Pending', semester: 'Fall 2026', gpa: 3.5 },
+//   { id: 's6', name: 'Fatima Al-Rashid', email: 'fatima@example.com', homeUniversity: 'Global University', hostUniversity: 'ETH Zurich', hostCountry: 'Switzerland', program: 'Joint Degree', status: 'Approved', semester: 'Spring 2026', gpa: 4.0 },
 ]
 
 export const programs: Program[] = [

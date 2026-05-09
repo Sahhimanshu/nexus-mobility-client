@@ -456,6 +456,8 @@ async function handleDelete(prog: Program) {
 
   try {
 
+    setConfirmDelete(null)
+
     await programApi.delete(prog.id)
 
     setPrograms(prev =>

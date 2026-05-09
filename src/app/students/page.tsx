@@ -3,7 +3,9 @@ import { useState } from 'react'
 import AppShell from '@/components/layout/AppShell'
 import Topbar from '@/components/layout/Topbar'
 import { SectionCard, Badge, StatMini } from '@/components/ui'
-import { students, Student } from '@/lib/data'
+import { Student } from '@/lib/data'
+import { studentApi } from '@/lib/api'
+import { useEffect } from 'react'
 import {
   Plus, Search, Download, Eye, X, Mail, GraduationCap,
   MapPin, Star, BookOpen, Calendar, ChevronLeft, UploadCloud, FileText, Edit3, Trash2
@@ -14,7 +16,58 @@ export default function StudentsPage() {
   const [statusFilter, setStatusFilter] = useState('All')
   const [selected, setSelected] = useState<Student | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
+const [students, setStudents] = useState<Student[]>([])
+-------------------------------------------------Fetch API -----------------------
+useEffect(() => {
 
+  async function fetchStudents() {
+
+    try {
+
+      const data = await studentApi.list({
+        tenantId: '75138fb1-fad9-4322-9153-2d47ecae2daa'
+      })
+
+      const list = data?.content || []
+
+      const mapped: Student[] = list.map(s => ({
+        id: s.id,
+        name: s.name,
+        email: s.email,
+        homeUniversity: s.homeUniversity ?? '',
+        hostUniversity: s.hostUniversity ?? '',
+        hostCountry: s.hostCountry ?? '',
+        program: s.program,
+        semester: s.semester ?? '',
+        gpa: s.gpa ?? 0,
+        status: s.status
+      }))
+
+      setStudents(mapped)
+
+    } catch (err) {
+
+      console.error('Failed to fetch students', err)
+      setStudents([])
+    }
+  }
+
+  fetchStudents()
+
+}, [])
+
+//----------------------------------------------Add student -----------------------------------------------
+const [newStudent, setNewStudent] = useState<Omit<Student, 'id'>>({
+  name: '',
+  email: '',
+  homeUniversity: '',
+  hostUniversity: '',
+  hostCountry: '',
+  program: 'Semester Exchange',
+  semester: '',
+  gpa: 0,
+  status: 'Pending'
+})
   const statuses = ['All', 'On Exchange', 'Approved', 'Completed', 'Pending']
 
   const filtered = students.filter(s => {
@@ -34,6 +87,66 @@ export default function StudentsPage() {
     return `linear-gradient(135deg, hsl(${hue}, 65%, 45%), hsl(${(hue + 40) % 360}, 65%, 55%))`
   }
 
+  async function handleAddStudent() {
+
+    try {
+
+      const payload = {
+        name: newStudent.name,
+        email: newStudent.email,
+        homeUniversity: newStudent.homeUniversity,
+        hostUniversity: newStudent.hostUniversity,
+        hostCountry: newStudent.hostCountry,
+        program: newStudent.program,
+        semester: newStudent.semester,
+        gpa: newStudent.gpa,
+        status: newStudent.status
+      }
+
+      const created = await studentApi.create(payload)
+
+      const mappedStudent: Student = {
+        id: created.id,
+        name: created.name,
+        email: created.email,
+        homeUniversity: created.homeUniversity ?? '',
+        hostUniversity: created.hostUniversity ?? '',
+        hostCountry: created.hostCountry ?? '',
+        program: created.program,
+        semester: created.semester ?? '',
+        gpa: created.gpa ?? 0,
+        status: created.status
+      }
+
+      setStudents(prev => [...prev, mappedStudent])
+
+      setShowAddModal(false)
+
+    } catch (err) {
+
+      console.error('Create failed', err)
+    }
+  }
+
+async function handleDeleteStudent(student: Student) {
+
+  try {
+
+    await studentApi.delete(student.id)
+
+    setStudents(prev =>
+      prev.filter(s => s.id !== student.id)
+    )
+
+    if (selected?.id === student.id) {
+      setSelected(null)
+    }
+
+  } catch (err) {
+
+    console.error('Delete failed', err)
+  }
+}
   return (
     <AppShell>
       <Topbar
@@ -156,7 +269,9 @@ export default function StudentsPage() {
                 </button>
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button className="btn-ghost" style={{ padding: '5px 10px', fontSize: 12 }}><Edit3 size={13} /></button>
-                  <button className="btn-danger" style={{ padding: '5px 10px', fontSize: 12 }}><Trash2 size={13} /></button>
+                  <button
+                    className="btn-danger"
+                    onClick={() => handleDeleteStudent(selected)} style={{ padding: '5px 10px', fontSize: 12 }}><Trash2 size={13} /></button>
                 </div>
               </div>
 
@@ -244,7 +359,17 @@ export default function StudentsPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Full Name</label>
-                  <input className="nx-input" placeholder="e.g. Alice Johnson" style={{ width: '100%' }} />
+                  <input className="nx-input"
+                    placeholder="e.g. Alice Johnson"
+                    value={newStudent.name}
+                    onChange={e =>
+                      setNewStudent({
+                        ...newStudent,
+                        name: e.target.value
+                      })
+                    }
+                    style={{ width: '100%' }}
+                  />
                 </div>
                 <div>
                   <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Email</label>
@@ -283,7 +408,13 @@ export default function StudentsPage() {
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button className="btn-ghost" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setShowAddModal(false)}>Cancel</button>
-                <button className="btn-primary" style={{ flex: 1, justifyContent: 'center' }}>Save Student</button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={handleAddStudent}>
+                  Save Student
+                </button>
               </div>
             </div>
           </div>
