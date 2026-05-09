@@ -91,32 +91,36 @@ const [newStudent, setNewStudent] = useState<Omit<Student, 'id'>>({
 
     try {
 
-      const payload = {
-        name: newStudent.name,
-        email: newStudent.email,
-        homeUniversity: newStudent.homeUniversity,
-        hostUniversity: newStudent.hostUniversity,
-        hostCountry: newStudent.hostCountry,
-        program: newStudent.program,
-        semester: newStudent.semester,
-        gpa: newStudent.gpa,
-        status: newStudent.status
-      }
+   const payload = {
+     fullName: newStudent.name,
+     email: newStudent.email,
+     homeUniversity: newStudent.homeUniversity,
+     hostUniversity: newStudent.hostUniversity,
+     hostCountryCode: newStudent.hostCountry,
+     programName: newStudent.program,
+     semesterLabel: newStudent.semester,
+     gpa: newStudent.gpa,
+     status: newStudent.status
+   }
 
       const created = await studentApi.create(payload)
 
-    const mapped: Student[] = list.map((s): Student => ({
-      id: s.id,
-      name: s.fullName ?? '',
-      email: s.email ?? '',
-      homeUniversity: s.homeUniversity ?? '',
-      hostUniversity: s.hostUniversity ?? '',
-      hostCountry: s.hostCountryCode ?? '',
-      program: s.programName ?? '',
-      semester: s.semesterLabel ?? '',
-      gpa: s.gpa ?? 0,
-      status: (s.status ?? 'Pending') as StudentStatus
-    }))
+    const mappedStudent: Student = {
+      id: created.id,
+      name: created.fullName ?? '',
+      email: created.email ?? '',
+      homeUniversity: created.homeUniversity ?? '',
+      hostUniversity: created.hostUniversity ?? '',
+      hostCountry: created.hostCountryCode ?? '',
+      program: created.programName ?? '',
+      semester: created.semesterLabel ?? '',
+      gpa: created.gpa ?? 0,
+      status: (created.status ?? 'Pending') as StudentStatus
+    }
+
+    setStudents(prev => [...prev, mappedStudent])
+
+    setShowAddModal(false)
       setStudents(prev => [...prev, mappedStudent])
 
       setShowAddModal(false)
