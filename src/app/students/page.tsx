@@ -17,7 +17,7 @@ export default function StudentsPage() {
   const [selected, setSelected] = useState<Student | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
 const [students, setStudents] = useState<Student[]>([])
--------------------------------------------------Fetch API -----------------------
+//-------------------------------------------------Fetch API -----------------------
 useEffect(() => {
 
   async function fetchStudents() {
