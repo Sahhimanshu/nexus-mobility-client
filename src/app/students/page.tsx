@@ -3,8 +3,8 @@ import { useState } from 'react'
 import AppShell from '@/components/layout/AppShell'
 import Topbar from '@/components/layout/Topbar'
 import { SectionCard, Badge, StatMini } from '@/components/ui'
-import { Student } from '@/lib/data'
-import { studentApi } from '@/lib/api'
+import { Student,StudentStatus} from '@/lib/data'
+import { studentApi} from '@/lib/api'
 import { useEffect } from 'react'
 import {
   Plus, Search, Download, Eye, X, Mail, GraduationCap,
@@ -30,18 +30,18 @@ useEffect(() => {
 
       const list = data?.content || []
 
-      const mapped: Student[] = list.map(s => ({
-        id: s.id,
-        name: s.name,
-        email: s.email,
-        homeUniversity: s.homeUniversity ?? '',
-        hostUniversity: s.hostUniversity ?? '',
-        hostCountry: s.hostCountry ?? '',
-        program: s.program,
-        semester: s.semester ?? '',
-        gpa: s.gpa ?? 0,
-        status: s.status
-      }))
+  const mapped: Student[] = list.map((s): Student => ({
+    id: s.id,
+    name: s.fullName ?? '',
+    email: s.email ?? '',
+    homeUniversity: s.homeUniversity ?? '',
+    hostUniversity: s.hostUniversity ?? '',
+    hostCountry: s.hostCountryCode ?? '',
+    program: s.programName ?? '',
+    semester: s.semesterLabel ?? '',
+    gpa: s.gpa ?? 0,
+    status: (s.status ?? 'Pending') as StudentStatus
+  }))
 
       setStudents(mapped)
 
@@ -105,19 +105,18 @@ const [newStudent, setNewStudent] = useState<Omit<Student, 'id'>>({
 
       const created = await studentApi.create(payload)
 
-      const mappedStudent: Student = {
-        id: created.id,
-        name: created.name,
-        email: created.email,
-        homeUniversity: created.homeUniversity ?? '',
-        hostUniversity: created.hostUniversity ?? '',
-        hostCountry: created.hostCountry ?? '',
-        program: created.program,
-        semester: created.semester ?? '',
-        gpa: created.gpa ?? 0,
-        status: created.status
-      }
-
+    const mapped: Student[] = list.map((s): Student => ({
+      id: s.id,
+      name: s.fullName ?? '',
+      email: s.email ?? '',
+      homeUniversity: s.homeUniversity ?? '',
+      hostUniversity: s.hostUniversity ?? '',
+      hostCountry: s.hostCountryCode ?? '',
+      program: s.programName ?? '',
+      semester: s.semesterLabel ?? '',
+      gpa: s.gpa ?? 0,
+      status: (s.status ?? 'Pending') as StudentStatus
+    }))
       setStudents(prev => [...prev, mappedStudent])
 
       setShowAddModal(false)
