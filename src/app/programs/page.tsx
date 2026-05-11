@@ -5,7 +5,7 @@ import AppShell from '@/components/layout/AppShell'
 import Topbar from '@/components/layout/Topbar'
 import { SectionCard, ProgressBar, StatMini } from '@/components/ui'
 import { Program } from '@/lib/data'
-import { programApi } from '@/lib/api'
+import { getTenantId, programApi } from '@/lib/api'
 import {
   Plus, Search, Award, Users, Calendar, X, Settings,
   Edit3, Trash2, ChevronLeft, BookOpen, MapPin,
@@ -179,6 +179,7 @@ function ProgramCell({ col, prog }: { col: ColDef; prog: Program }) {
 // Main Page
 // ─────────────────────────────────────────────────────────────
 export default function ProgramsPage() {
+  const tenantId = getTenantId() ?? undefined
   // programs state
   useEffect(() => {
 
@@ -187,7 +188,7 @@ export default function ProgramsPage() {
       try {
 
         const data = await programApi.list({
-          tenantId: "75138fb1-fad9-4322-9153-2d47ecae2daa"
+          tenantId
         });
 
         const list = data?.content || [];

@@ -14,8 +14,8 @@ export interface PageResponse<T> {
   content: T[]
   totalElements: number
   totalPages: number
-  number: number
-  size: number
+  page: number
+  limit: number
 }
 
 export interface PartnershipInput {
@@ -252,6 +252,73 @@ export interface NewsRecord {
   updatedAt: string
 }
 
+export interface VisitInput {
+  tenantId?: string
+  title: string
+  type: string
+  status?: string | null
+  visitDate?: string | null
+  location?: string | null
+  institutionName?: string | null
+  agenda?: string | null
+}
+
+export interface VisitParticipantInput {
+  tenantId?: string
+  fullName: string
+  email?: string | null
+  organization?: string | null
+  role?: string | null
+}
+
+export interface EventInput {
+  tenantId?: string
+  name: string
+  type: string
+  eventDate?: string | null
+  countryCode?: string | null
+  location?: string | null
+  hostInstitution?: string | null
+  description?: string | null
+}
+
+export interface EventParticipantInput {
+  tenantId?: string
+  fullName: string
+  email?: string | null
+  organization?: string | null
+  role?: string | null
+}
+
+export interface NewsInput {
+  tenantId?: string
+  title: string
+  category: string
+  publishDate?: string | null
+  sourceUrl?: string | null
+  summary?: string | null
+}
+
+export interface CountryStatInput {
+  snapshotYear?: number | null
+  outboundStudents?: number | null
+  inboundStudents?: number | null
+  partnershipCount?: number | null
+}
+
+export interface DashboardSnapshotRecord {
+  id: string
+  tenantId: string
+  snapshotDate: string
+  totalPrograms?: number | null
+  totalPartnerships?: number | null
+  totalEvents?: number | null
+  totalVisits?: number | null
+  totalStudents?: number | null
+  createdAt: string
+  updatedAt: string
+}
+
 export interface DashboardOverview {
   date: string
   totalPrograms: number
@@ -350,9 +417,9 @@ async function apiFetch<T>(path: string, options: RequestInit = {}, config: Fetc
   const res = await fetch(buildUrl(path, { ...config, tenantId: tenantId ?? undefined }), { ...options, headers })
 
   if (!res.ok) {
-    const err: ApiError = await res.json().catch(() => ({
+    const err: ApiError = await res.json().catch(async () => ({
       status: res.status,
-      detail: res.statusText,
+      detail: (await res.text().catch(() => null)) || res.statusText,
     }))
     throw err
   }
@@ -411,6 +478,12 @@ export const dashboardApi = {
   overview: (tenantId?: string) =>
     apiFetch<DashboardOverview>('/dashboard/overview', {}, { tenantId }),
 
+  snapshot: (tenantId?: string, date?: string) =>
+    apiFetch<DashboardOverview>('/dashboard/snapshot', {}, {
+      tenantId,
+      params: { date },
+    }),
+
   mobilityTrend: (tenantId?: string, years = 5) =>
     apiFetch<MobilityTrendPoint[]>('/dashboard/mobility-trend', {}, {
       tenantId,
@@ -422,12 +495,29 @@ export const dashboardApi = {
       tenantId,
       params: { year },
     }),
+
+  refreshSnapshot: (tenantId?: string, date?: string) =>
+    apiFetch<DashboardSnapshotRecord>('/dashboard/snapshot/refresh', {
+      method: 'POST',
+    }, {
+      tenantId,
+      params: { date },
+    }),
 }
 
 export const countryApi = {
   list: () => apiFetch<CountryRecord[]>('/countries', {}, { includeTenant: false }),
   get: (code: string) => apiFetch<CountryRecord>(`/countries/${code}`, {}, { includeTenant: false }),
   stats: (tenantId?: string) => apiFetch<CountryStatRecord[]>('/countries/stats', {}, { tenantId }),
+  patchStat: (countryCode: string, tenantId: string, payload: CountryStatInput) =>
+    apiFetch<CountryStatRecord>(`/countries/stats/${countryCode}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }, {
+      tenantId,
+      includeTenant: false,
+      params: { tenantId },
+    }),
 }
 
 export const partnershipApi = {
@@ -455,6 +545,8 @@ export const partnershipApi = {
     }),
 
   delete: (id: string) => apiFetch<void>(`/partnerships/${id}`, { method: 'DELETE' }),
+
+  get: (id: string) => apiFetch<PartnershipRecord>(`/partnerships/${id}`),
 
   columns: (tenantId?: string) =>
     apiFetch<ColumnDefinitionRecord[]>('/partnerships/columns', {}, { tenantId }),
@@ -499,6 +591,8 @@ export const studentApi = {
     }),
 
   delete: (id: string) => apiFetch<void>(`/students/${id}`, { method: 'DELETE' }),
+
+  get: (id: string) => apiFetch<StudentRecord>(`/students/${id}`),
 }
 
 export const programApi = {
@@ -571,11 +665,36 @@ export const eventApi = {
         from: params?.from,
         to: params?.to,
         page: params?.page,
-        limit: params?.limit,
+      limit: params?.limit,
       },
     }),
 
+  create: async (payload: EventInput) =>
+    apiFetch<EventRecord>('/events', {
+      method: 'POST',
+      body: JSON.stringify(await withTenantBody(payload)),
+    }),
+
+  update: async (id: string, payload: EventInput) =>
+    apiFetch<EventRecord>(`/events/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(await withTenantBody(payload)),
+    }),
+
+  delete: (id: string) => apiFetch<void>(`/events/${id}`, { method: 'DELETE' }),
+
+  get: (id: string) => apiFetch<EventRecord>(`/events/${id}`),
+
   participants: (id: string) => apiFetch<EventParticipantRecord[]>(`/events/${id}/participants`),
+
+  addParticipant: async (id: string, payload: EventParticipantInput) =>
+    apiFetch<EventParticipantRecord[]>(`/events/${id}/participants`, {
+      method: 'POST',
+      body: JSON.stringify(await withTenantBody(payload)),
+    }),
+
+  removeParticipant: (id: string, participantId: string) =>
+    apiFetch<void>(`/events/${id}/participants/${participantId}`, { method: 'DELETE' }),
 }
 
 export const newsApi = {
@@ -594,6 +713,22 @@ export const newsApi = {
       tenantId,
       params: { limit },
     }),
+
+  create: async (payload: NewsInput) =>
+    apiFetch<NewsRecord>('/news', {
+      method: 'POST',
+      body: JSON.stringify(await withTenantBody(payload)),
+    }),
+
+  update: async (id: string, payload: NewsInput) =>
+    apiFetch<NewsRecord>(`/news/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(await withTenantBody(payload)),
+    }),
+
+  delete: (id: string) => apiFetch<void>(`/news/${id}`, { method: 'DELETE' }),
+
+  get: (id: string) => apiFetch<NewsRecord>(`/news/${id}`),
 }
 
 export const visitApi = {
@@ -604,11 +739,36 @@ export const visitApi = {
         type: params?.type,
         status: params?.status,
         page: params?.page,
-        limit: params?.limit,
+      limit: params?.limit,
       },
     }),
 
+  create: async (payload: VisitInput) =>
+    apiFetch<VisitRecord>('/visits', {
+      method: 'POST',
+      body: JSON.stringify(await withTenantBody(payload)),
+    }),
+
+  update: async (id: string, payload: VisitInput) =>
+    apiFetch<VisitRecord>(`/visits/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(await withTenantBody(payload)),
+    }),
+
+  delete: (id: string) => apiFetch<void>(`/visits/${id}`, { method: 'DELETE' }),
+
+  get: (id: string) => apiFetch<VisitRecord>(`/visits/${id}`),
+
   participants: (id: string) => apiFetch<VisitParticipantRecord[]>(`/visits/${id}/participants`),
+
+  addParticipant: async (id: string, payload: VisitParticipantInput) =>
+    apiFetch<VisitParticipantRecord[]>(`/visits/${id}/participants`, {
+      method: 'POST',
+      body: JSON.stringify(await withTenantBody(payload)),
+    }),
+
+  removeParticipant: (id: string, participantId: string) =>
+    apiFetch<void>(`/visits/${id}/participants/${participantId}`, { method: 'DELETE' }),
 }
 
 export const documentApi = {

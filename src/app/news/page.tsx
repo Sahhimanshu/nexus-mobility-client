@@ -1,8 +1,9 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import AppShell from '@/components/layout/AppShell'
 import Topbar from '@/components/layout/Topbar'
 import { SectionCard } from '@/components/ui'
+import { getTenantId, newsApi, type NewsRecord } from '@/lib/api'
 import { Search, ExternalLink, Bookmark, Share2, TrendingUp, Globe2, GraduationCap, Award } from 'lucide-react'
 
 interface NewsItem {
@@ -18,104 +19,96 @@ interface NewsItem {
   readTime: string
 }
 
-const newsItems: NewsItem[] = [
-  {
-    id: 'n1',
-    title: 'UK Expands Student Visa Opportunities for International Graduates',
-    source: 'BBC Education', date: 'Mar 25, 2026', category: 'Visa & Policy',
-    summary: 'The UK government announced an extended post-study work visa of 3 years for international graduates from top universities, effective from September 2026.',
-    url: '#', isNew: true, dot: '#059669', readTime: '3 min',
-  },
-  {
-    id: 'n2',
-    title: 'New QS World University Rankings 2026 Released',
-    source: 'QS World Rankings', date: 'Mar 22, 2026', category: 'Rankings',
-    summary: 'The latest QS rankings show Asian universities gaining ground, with NUS and NTU entering the top 10 for the first time. MIT retains the #1 position globally.',
-    url: '#', dot: '#2563EB', readTime: '4 min',
-  },
-  {
-    id: 'n3',
-    title: 'EU Erasmus+ Budget Increased by 15% for 2026-2030 Programme',
-    source: 'European Commission', date: 'Mar 20, 2026', category: 'Funding',
-    summary: 'The EU has announced a €4.6 billion increase to the Erasmus+ budget, prioritising green skills, digital learning, and mobility for students from underrepresented groups.',
-    url: '#', dot: '#D97706', readTime: '5 min',
-  },
-  {
-    id: 'n4',
-    title: 'India Becomes Top Source Country for International Students in the US',
-    source: 'IIE Open Doors', date: 'Mar 18, 2026', category: 'Trends',
-    summary: 'For the first time, Indian students outnumber Chinese students in US universities, with a 15% year-on-year increase driven by STEM program demand.',
-    url: '#', dot: '#7C3AED', readTime: '3 min',
-  },
-  {
-    id: 'n5',
-    title: 'Germany Launches New Academic Visa Fast-Track Program',
-    source: 'DAAD Germany', date: 'Mar 15, 2026', category: 'Visa & Policy',
-    summary: 'Germany\'s new Academic Visa Fast-Track reduces processing time to 2 weeks for students from partner universities. Program covers 42 countries initially.',
-    url: '#', dot: '#DC2626', readTime: '2 min',
-  },
-  {
-    id: 'n6',
-    title: 'Global Student Mobility Numbers Recover to Pre-Pandemic Levels',
-    source: 'UNESCO', date: 'Mar 12, 2026', category: 'Trends',
-    summary: 'UNESCO report confirms 6.4 million international students globally in 2025, surpassing the 2019 record of 6.1 million. Asia-Pacific leads growth.',
-    url: '#', dot: '#0891B2', readTime: '4 min',
-  },
-  {
-    id: 'n7',
-    title: 'Joint WHO-UNESCO Report on International Student Mental Health',
-    source: 'WHO', date: 'Mar 10, 2026', category: 'Welfare',
-    summary: 'New guidelines published for universities to support the mental health of international students, including cultural adjustment, language barriers, and financial stress.',
-    url: '#', dot: '#DB2777', readTime: '6 min',
-  },
-]
-
-const categories = ['All', 'Visa & Policy', 'Rankings', 'Funding', 'Trends', 'Welfare']
+const categories = ['All', 'Mobility', 'Partnership', 'Campus', 'Scholarship', 'Announcement']
 
 const catColors: Record<string, { bg: string; color: string; border: string }> = {
-  'Visa & Policy': { bg: '#DCFCE7', color: '#166534', border: '#BBF7D0' },
-  'Rankings': { bg: '#DBEAFE', color: '#1E40AF', border: '#BFDBFE' },
-  'Funding': { bg: '#FEF3C7', color: '#92400E', border: '#FDE68A' },
-  'Trends': { bg: '#EDE9FE', color: '#5B21B6', border: '#DDD6FE' },
-  'Welfare': { bg: '#FCE7F3', color: '#9D174D', border: '#FBCFE8' },
+  Mobility: { bg: '#DCFCE7', color: '#166534', border: '#BBF7D0' },
+  Partnership: { bg: '#DBEAFE', color: '#1E40AF', border: '#BFDBFE' },
+  Campus: { bg: '#FEF3C7', color: '#92400E', border: '#FDE68A' },
+  Scholarship: { bg: '#EDE9FE', color: '#5B21B6', border: '#DDD6FE' },
+  Announcement: { bg: '#FCE7F3', color: '#9D174D', border: '#FBCFE8' },
 }
 
 const catIcons: Record<string, React.ReactNode> = {
-  'Visa & Policy': <Globe2 size={14} />,
-  'Rankings': <Award size={14} />,
-  'Funding': <TrendingUp size={14} />,
-  'Trends': <TrendingUp size={14} />,
-  'Welfare': <GraduationCap size={14} />,
+  Mobility: <Globe2 size={14} />,
+  Partnership: <Award size={14} />,
+  Campus: <TrendingUp size={14} />,
+  Scholarship: <GraduationCap size={14} />,
+  Announcement: <Globe2 size={14} />,
+}
+
+function mapNews(record: NewsRecord): NewsItem {
+  const category = record.category ? record.category.charAt(0) + record.category.slice(1).toLowerCase() : 'Announcement'
+  return {
+    id: record.id,
+    title: record.title ?? '',
+    source: record.sourceUrl ? new URL(record.sourceUrl).hostname.replace('www.', '') : 'Backend News',
+    date: record.publishDate ? new Date(record.publishDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+    category,
+    summary: record.summary ?? '',
+    url: record.sourceUrl ?? '#',
+    isNew: true,
+    dot: '#2563EB',
+    readTime: '3 min',
+  }
 }
 
 export default function NewsPage() {
+  const tenantId = getTenantId() ?? undefined
   const [search, setSearch] = useState('')
   const [catFilter, setCatFilter] = useState('All')
   const [saved, setSaved] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([])
 
-  const filtered = newsItems.filter(n => {
-    const matchSearch = n.title.toLowerCase().includes(search.toLowerCase()) ||
-      n.source.toLowerCase().includes(search.toLowerCase()) ||
-      n.summary.toLowerCase().includes(search.toLowerCase())
-    const matchCat = catFilter === 'All' || n.category === catFilter
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadNews() {
+      setLoading(true)
+      try {
+        const [list, top] = await Promise.all([
+          newsApi.list({ tenantId, limit: 100 }),
+          newsApi.top(tenantId, 7),
+        ])
+
+        if (cancelled) return
+
+        const merged = [...top.map(mapNews), ...(list.content ?? []).map(mapNews)]
+        const unique = Array.from(new Map(merged.map(item => [item.id, item])).values())
+        setNewsItems(unique)
+      } catch (error) {
+        console.error('Failed to load news', error)
+        if (!cancelled) setNewsItems([])
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadNews()
+    return () => {
+      cancelled = true
+    }
+  }, [tenantId])
+
+  const filtered = useMemo(() => newsItems.filter(item => {
+    const matchSearch = item.title.toLowerCase().includes(search.toLowerCase()) ||
+      item.source.toLowerCase().includes(search.toLowerCase()) ||
+      item.summary.toLowerCase().includes(search.toLowerCase())
+    const matchCat = catFilter === 'All' || item.category === catFilter
     return matchSearch && matchCat
-  })
+  }), [search, catFilter, newsItems])
 
   const toggleSave = (id: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    setSaved(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id])
+    setSaved(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id])
   }
 
   return (
     <AppShell>
-      <Topbar
-        title="Global News"
-        subtitle="Latest international education sector news and updates"
-      />
+      <Topbar title="Global News" subtitle={loading ? 'Loading live articles...' : 'Latest international education sector news and updates'} />
 
       <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: 20 }} className="page-enter">
-
-        {/* Hero Banner */}
         <div style={{
           borderRadius: 16,
           background: 'linear-gradient(135deg, #0891B2 0%, #2563EB 60%, #4F46E5 100%)',
@@ -134,7 +127,7 @@ export default function NewsPage() {
               Stay Ahead of International Education Trends
             </h2>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 4 }}>
-              Curated news from BBC Education, QS, UNESCO, DAAD, and 20+ trusted sources
+              Curated news from backend-managed articles and sources
             </p>
           </div>
           <div style={{
@@ -147,7 +140,6 @@ export default function NewsPage() {
           </div>
         </div>
 
-        {/* Search + Filter bar */}
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
             <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
@@ -160,72 +152,55 @@ export default function NewsPage() {
             />
           </div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {categories.map(c => (
-              <button key={c} onClick={() => setCatFilter(c)}
-                className={`tab-btn ${catFilter === c ? 'active' : ''}`}>
-                {c}
+            {categories.map(category => (
+              <button key={category} onClick={() => setCatFilter(category)} className={`tab-btn ${catFilter === category ? 'active' : ''}`}>
+                {category}
               </button>
             ))}
           </div>
         </div>
 
-        {/* News Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
-          {filtered.map(n => {
-            const cat = catColors[n.category] || catColors['Trends']
-            const isSaved = saved.includes(n.id)
+          {filtered.map(item => {
+            const cat = catColors[item.category] || catColors.Announcement
+            const isSaved = saved.includes(item.id)
             return (
-              <div key={n.id} className="news-card">
-                {/* Card Top */}
+              <div key={item.id} className="news-card">
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: n.dot, flexShrink: 0, marginTop: 2 }} />
-                    <span style={{
-                      background: cat.bg, color: cat.color, border: `1px solid ${cat.border}`,
-                      fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5,
-                      display: 'flex', alignItems: 'center', gap: 4,
-                    }}>
-                      {catIcons[n.category]} {n.category}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: item.dot, flexShrink: 0, marginTop: 2 }} />
+                    <span style={{ background: cat.bg, color: cat.color, border: `1px solid ${cat.border}`, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 5, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {catIcons[item.category] ?? <Globe2 size={14} />} {item.category}
                     </span>
-                    {n.isNew && (
+                    {item.isNew && (
                       <span style={{ background: '#DCFCE7', color: '#166534', border: '1px solid #BBF7D0', fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 5 }}>
                         NEW
                       </span>
                     )}
                   </div>
-                  <button
-                    onClick={e => toggleSave(n.id, e)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
-                  >
+                  <button onClick={e => toggleSave(item.id, e)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
                     <Bookmark size={15} color={isSaved ? '#2563EB' : '#8593A8'} fill={isSaved ? '#2563EB' : 'none'} />
                   </button>
                 </div>
 
-                {/* Title */}
-                <h3 style={{
-                  fontSize: 14.5, fontWeight: 700, color: 'var(--text-primary)',
-                  lineHeight: 1.45, marginBottom: 10, fontFamily: 'var(--font-display)',
-                }}>{n.title}</h3>
+                <h3 style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.45, marginBottom: 10, fontFamily: 'var(--font-display)' }}>
+                  {item.title}
+                </h3>
 
-                {/* Summary */}
                 <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 14 }}>
-                  {n.summary}
+                  {item.summary}
                 </p>
 
-                {/* Footer */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  paddingTop: 12, borderTop: '1px solid var(--border)',
-                }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid var(--border)' }}>
                   <div>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{n.source}</p>
-                    <p style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{n.date} · {n.readTime} read</p>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{item.source}</p>
+                    <p style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{item.date} · {item.readTime} read</p>
                   </div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6 }}>
                       <Share2 size={13} color="#8593A8" />
                     </button>
-                    <a href={n.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+                    <a href={item.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
                       <button className="btn-ghost" style={{ padding: '6px 12px', fontSize: 12 }}>
                         Read More <ExternalLink size={12} />
                       </button>
@@ -244,20 +219,13 @@ export default function NewsPage() {
           </div>
         )}
 
-        {/* Sources Note */}
-        <div style={{
-          background: '#F8FAFF', borderRadius: 12, padding: '14px 20px',
-          border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12,
-        }}>
+        <div style={{ background: '#F8FAFF', borderRadius: 12, padding: '14px 20px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <Globe2 size={16} color="#2563EB" />
           <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            <strong style={{ color: 'var(--text-secondary)' }}>Sources:</strong> News is aggregated from BBC Education, QS World Rankings, UNESCO, European Commission, DAAD, IIE Open Doors, Times Higher Education, and other trusted education sector publications.
-            <span style={{ color: '#2563EB', fontWeight: 600, marginLeft: 6, cursor: 'pointer' }}>Configure Sources →</span>
+            <strong style={{ color: 'var(--text-secondary)' }}>Sources:</strong> News is loaded from the backend `news` endpoint and rendered with live category, summary, and source URL data.
           </p>
         </div>
-
       </div>
     </AppShell>
   )
 }
-
