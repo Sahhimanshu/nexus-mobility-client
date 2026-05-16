@@ -3,11 +3,13 @@ import { useEffect, useMemo, useState } from 'react'
 import AppShell from '@/components/layout/AppShell'
 import Topbar from '@/components/layout/Topbar'
 import { SectionCard, Badge, StatMini } from '@/components/ui'
-import { getTenantId, type VisitParticipantRecord, type VisitRecord, visitApi } from '@/lib/api'
+import { formatEnumLabel, getTenantId, type VisitParticipantRecord, type VisitRecord, visitApi } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error'
 import {
   Plus, MapPin, Users, X, ChevronLeft, Calendar,
   Edit3, Trash2, UploadCloud, FileText, Plane, Building2,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface VisitView {
   id: string
@@ -50,8 +52,8 @@ const defaultNewVisit = {
 }
 
 function mapVisit(record: VisitRecord): VisitView {
-  const type = record.type ? record.type.charAt(0) + record.type.slice(1).toLowerCase().replace(/_/g, ' ') : 'Visit'
-  const status = record.status ? record.status.charAt(0) + record.status.slice(1).toLowerCase() : 'Planned'
+  const type = record.type ? formatEnumLabel(record.type) : 'Visit'
+  const status = record.status ? formatEnumLabel(record.status) : 'Planned'
   return {
     id: record.id,
     institution: record.institutionName ?? record.title ?? '',
@@ -86,7 +88,7 @@ export default function VisitsPage() {
         if (cancelled) return
         setVisits((page.content ?? []).map(mapVisit))
       } catch (error) {
-        console.error('Failed to load visits', error)
+        toast.error(getErrorMessage(error))
         if (!cancelled) setVisits([])
       } finally {
         if (!cancelled) setLoading(false)
@@ -112,7 +114,7 @@ export default function VisitsPage() {
         const data = await visitApi.participants(selectedId!)
         if (!cancelled) setParticipants(data)
       } catch (error) {
-        console.error('Failed to load visit participants', error)
+        toast.error(getErrorMessage(error))
         if (!cancelled) setParticipants([])
       }
     }
@@ -144,7 +146,7 @@ export default function VisitsPage() {
       setShowAddModal(false)
       setNewVisit(defaultNewVisit)
     } catch (error) {
-      console.error('Create visit failed', error)
+      toast.error(getErrorMessage(error))
     } finally {
       setSaving(false)
     }
@@ -157,8 +159,9 @@ export default function VisitsPage() {
       if (selected?.id === visit.id) {
         setSelected(null)
       }
+      toast.success('Visit deleted')
     } catch (error) {
-      console.error('Delete visit failed', error)
+      toast.error(getErrorMessage(error))
     }
   }
 

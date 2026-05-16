@@ -29,6 +29,8 @@ import {
   type PartnershipRecord,
   type ProgramRecord,
 } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error'
+import { toast } from 'sonner'
 
 type ChartPoint = { country: string; students: number }
 type PartnershipBucket = { country: string; count: number }
@@ -142,7 +144,7 @@ export default function DashboardPage() {
 
         setTopNews(newsListRes)
       } catch (error) {
-        console.error('Failed to load dashboard', error)
+        toast.error(getErrorMessage(error, 'Failed to load dashboard'))
         if (!cancelled) {
           setOverview(prev => ({ ...prev }))
           setStudentChart([])

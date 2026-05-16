@@ -10,10 +10,12 @@ import {
   type CountryRecord,
   type PartnershipRecord,
 } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error'
 import {
   Plus, Search, Download, Eye, X, FileText, UploadCloud,
   Users, ChevronLeft, Calendar, MapPin, Edit3, Trash2,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface PartnershipView {
   id: string
@@ -90,7 +92,7 @@ export default function PartnershipsPage() {
         setCountries(countryList)
         setPartnerships((partnershipPage.content ?? []).map(item => mapPartnership(item, countryList)))
       } catch (error) {
-        console.error('Failed to fetch partnerships', error)
+        toast.error(getErrorMessage(error))
         if (!cancelled) {
           setPartnerships([])
           setCountries([])
@@ -136,7 +138,7 @@ export default function PartnershipsPage() {
       setShowAddModal(false)
       setNewPartnership(defaultNewPartnership)
     } catch (error) {
-      console.error('Create partnership failed', error)
+      toast.error(getErrorMessage(error))
     } finally {
       setSaving(false)
     }
@@ -149,8 +151,9 @@ export default function PartnershipsPage() {
       if (selected?.id === partnership.id) {
         setSelected(null)
       }
+      toast.success('Partnership deleted')
     } catch (error) {
-      console.error('Delete partnership failed', error)
+      toast.error(getErrorMessage(error))
     }
   }
 

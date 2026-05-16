@@ -4,7 +4,9 @@ import AppShell from '@/components/layout/AppShell'
 import Topbar from '@/components/layout/Topbar'
 import { SectionCard, Badge, StatMini } from '@/components/ui'
 import { documentApi, getTenantId, type DocumentRecord } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error'
 import { Upload, Search, FileText, Download, Trash2, Eye, UploadCloud, X } from 'lucide-react'
+import { toast } from 'sonner'
 
 const typeIcons: Record<string, string> = {
   MOU: '📄',
@@ -71,7 +73,7 @@ export default function DocumentsPage() {
         const records = await documentApi.list({ tenantId })
         if (!cancelled) setDocuments(records.map(mapDocument))
       } catch (error) {
-        console.error('Failed to load documents', error)
+        toast.error(getErrorMessage(error))
         if (!cancelled) setDocuments([])
       } finally {
         if (!cancelled) setLoading(false)
@@ -106,7 +108,7 @@ export default function DocumentsPage() {
       setShowUploadModal(false)
       setUploadFile(null)
     } catch (error) {
-      console.error('Upload failed', error)
+      toast.error(getErrorMessage(error))
     } finally {
       setUploading(false)
     }
@@ -116,8 +118,9 @@ export default function DocumentsPage() {
     try {
       await documentApi.delete(id)
       setDocuments(prev => prev.filter(doc => doc.id !== id))
+      toast.success('Document deleted')
     } catch (error) {
-      console.error('Delete failed', error)
+      toast.error(getErrorMessage(error))
     }
   }
 

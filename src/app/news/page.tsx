@@ -3,8 +3,10 @@ import { useEffect, useMemo, useState } from 'react'
 import AppShell from '@/components/layout/AppShell'
 import Topbar from '@/components/layout/Topbar'
 import { SectionCard } from '@/components/ui'
-import { getTenantId, newsApi, type NewsRecord } from '@/lib/api'
+import { getTenantId, liveNewsApi, newsApi, type LiveNewsRecord, type NewsRecord } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error'
 import { Search, ExternalLink, Bookmark, Share2, TrendingUp, Globe2, GraduationCap, Award } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface NewsItem {
   id: string
@@ -37,12 +39,31 @@ const catIcons: Record<string, React.ReactNode> = {
   Announcement: <Globe2 size={14} />,
 }
 
+function safeHostname(value?: string | null) {
+  if (!value) return 'Live News'
+  try {
+    const normalized = value.startsWith('http') ? value : `https://${value}`
+    return new URL(normalized).hostname.replace('www.', '')
+  } catch {
+    return value
+  }
+}
+
+function classifyNews(item: Pick<NewsItem, 'title' | 'summary' | 'source'>) {
+  const text = `${item.title} ${item.summary} ${item.source}`.toLowerCase()
+  if (text.includes('scholarship') || text.includes('grant')) return 'Scholarship'
+  if (text.includes('partnership') || text.includes('agreement') || text.includes('mou')) return 'Partnership'
+  if (text.includes('campus') || text.includes('university') || text.includes('college')) return 'Campus'
+  if (text.includes('exchange') || text.includes('mobility') || text.includes('international student')) return 'Mobility'
+  return 'Announcement'
+}
+
 function mapNews(record: NewsRecord): NewsItem {
   const category = record.category ? record.category.charAt(0) + record.category.slice(1).toLowerCase() : 'Announcement'
   return {
     id: record.id,
     title: record.title ?? '',
-    source: record.sourceUrl ? new URL(record.sourceUrl).hostname.replace('www.', '') : 'Backend News',
+    source: safeHostname(record.sourceUrl),
     date: record.publishDate ? new Date(record.publishDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
     category,
     summary: record.summary ?? '',
@@ -50,6 +71,27 @@ function mapNews(record: NewsRecord): NewsItem {
     isNew: true,
     dot: '#2563EB',
     readTime: '3 min',
+  }
+}
+
+function mapLiveNews(record: LiveNewsRecord): NewsItem {
+  const title = record.title?.trim() || 'Live news item'
+  const summary = record.summary?.trim() || 'Fresh live article from the global news feed.'
+  const source = safeHostname(record.domain ?? record.source)
+  const date = record.publishedAt ? new Date(record.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : ''
+  const category = classifyNews({ title, summary, source })
+
+  return {
+    id: `${record.url}-${title}`,
+    title,
+    source,
+    date,
+    category,
+    summary,
+    url: record.url,
+    isNew: true,
+    dot: '#2563EB',
+    readTime: '2 min',
   }
 }
 
@@ -67,19 +109,25 @@ export default function NewsPage() {
     async function loadNews() {
       setLoading(true)
       try {
-        const [list, top] = await Promise.all([
-          newsApi.list({ tenantId, limit: 100 }),
-          newsApi.top(tenantId, 7),
+        const [live, top] = await Promise.all([
+          liveNewsApi.search(search || 'international student exchange university scholarship', 12),
+          newsApi.top(tenantId, 6),
         ])
 
         if (cancelled) return
 
-        const merged = [...top.map(mapNews), ...(list.content ?? []).map(mapNews)]
+        const merged = [...live.map(mapLiveNews), ...top.map(mapNews)]
         const unique = Array.from(new Map(merged.map(item => [item.id, item])).values())
         setNewsItems(unique)
       } catch (error) {
-        console.error('Failed to load news', error)
-        if (!cancelled) setNewsItems([])
+        try {
+          const fallback = await newsApi.list({ tenantId, limit: 50 })
+          if (cancelled) return
+          setNewsItems((fallback.content ?? []).map(mapNews))
+        } catch (fallbackError) {
+          toast.error(getErrorMessage(fallbackError, getErrorMessage(error, 'Failed to load news')))
+          if (!cancelled) setNewsItems([])
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -89,7 +137,7 @@ export default function NewsPage() {
     return () => {
       cancelled = true
     }
-  }, [tenantId])
+  }, [tenantId, search])
 
   const filtered = useMemo(() => newsItems.filter(item => {
     const matchSearch = item.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -221,8 +269,8 @@ export default function NewsPage() {
 
         <div style={{ background: '#F8FAFF', borderRadius: 12, padding: '14px 20px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <Globe2 size={16} color="#2563EB" />
-          <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            <strong style={{ color: 'var(--text-secondary)' }}>Sources:</strong> News is loaded from the backend `news` endpoint and rendered with live category, summary, and source URL data.
+            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            <strong style={{ color: 'var(--text-secondary)' }}>Sources:</strong> News is loaded from GDELT live articles first, with backend news used as a fallback if the live feed is unavailable.
           </p>
         </div>
       </div>

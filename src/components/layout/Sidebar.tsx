@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Handshake, Users, BookOpen,
-  Globe2, FileText, Bell, Settings, LogOut,
+  Globe2, FileText, Settings, LogOut,
   CalendarDays, Newspaper, Building2, ChevronRight,
   Sparkles, MapPin
 } from 'lucide-react'
@@ -86,19 +86,11 @@ export default function Sidebar() {
 
         <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '14px 8px' }} />
         <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 8px 8px', fontWeight: 700 }}>System</div>
-        <div className="nav-item" style={{ cursor: 'pointer' }}>
-          <Bell size={15} />
-          <span style={{ flex: 1 }}>Notifications</span>
-          <span style={{
-            fontSize: 10, fontWeight: 700,
-            background: '#FEE2E2', color: '#991B1B',
-            borderRadius: 5, padding: '2px 6px', lineHeight: 1.4,
-          }}>3</span>
-        </div>
-        <div className="nav-item" style={{ cursor: 'pointer' }}>
+        <Link href="/settings" className="nav-item">
           <Settings size={15} />
-          <span>Settings</span>
-        </div>
+          <span style={{ flex: 1 }}>Settings</span>
+          <ChevronRight size={13} style={{ opacity: 0.5 }} />
+        </Link>
       </nav>
 
       {/* User Profile */}

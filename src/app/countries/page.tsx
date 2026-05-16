@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from 'react'
 import AppShell from '@/components/layout/AppShell'
 import Topbar from '@/components/layout/Topbar'
 import { countryApi, getTenantId, type CountryRecord, type CountryStatRecord } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error'
 import { SectionCard } from '@/components/ui'
+import { toast } from 'sonner'
 
 const statusConfig: Record<string, { color: string; bg: string; border: string }> = {
   Strong: { color: '#059669', bg: '#DCFCE7', border: '#BBF7D0' },
@@ -41,7 +43,7 @@ export default function CountriesPage() {
           stat: statMap.get(country.code) ?? null,
         })))
       } catch (error) {
-        console.error('Failed to load countries', error)
+        toast.error(getErrorMessage(error, 'Failed to load countries'))
         if (!cancelled) setCountryData([])
       } finally {
         if (!cancelled) setLoading(false)

@@ -4,10 +4,12 @@ import AppShell from '@/components/layout/AppShell'
 import Topbar from '@/components/layout/Topbar'
 import { SectionCard, Badge, StatMini } from '@/components/ui'
 import { countryApi, getTenantId, studentApi, type CountryRecord, type StudentRecord } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error'
 import {
   Plus, Search, Download, Eye, X, Mail, GraduationCap,
   MapPin, Star, BookOpen, Calendar, ChevronLeft, UploadCloud, FileText, Edit3, Trash2,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface StudentView {
   id: string
@@ -61,6 +63,8 @@ export default function StudentsPage() {
   const [countries, setCountries] = useState<CountryRecord[]>([])
   const [newStudent, setNewStudent] = useState(defaultNewStudent)
   const [saving, setSaving] = useState(false)
+  const [editingStudent, setEditingStudent] = useState<StudentView | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -76,7 +80,7 @@ export default function StudentsPage() {
         setCountries(countryList)
         setStudents((studentPage.content ?? []).map(student => mapStudent(student, countryList)))
       } catch (error) {
-        console.error('Failed to fetch students', error)
+        toast.error(getErrorMessage(error))
         if (!cancelled) {
           setStudents([])
           setCountries([])
@@ -132,7 +136,7 @@ export default function StudentsPage() {
       setShowAddModal(false)
       setNewStudent(defaultNewStudent)
     } catch (error) {
-      console.error('Create failed', error)
+      toast.error(getErrorMessage(error))
     } finally {
       setSaving(false)
     }
@@ -145,8 +149,47 @@ export default function StudentsPage() {
       if (selected?.id === student.id) {
         setSelected(null)
       }
+      toast.success('Student deleted')
     } catch (error) {
-      console.error('Delete failed', error)
+      toast.error(getErrorMessage(error))
+    }
+  }
+
+  async function handleUpdateStudent() {
+    if (!editingStudent) return
+
+    setSaving(true)
+
+    try {
+      const updated = await studentApi.update(editingStudent.id, {
+        fullName: editingStudent.name,
+        email: editingStudent.email,
+        homeUniversity: editingStudent.homeUniversity || null,
+        hostUniversity: editingStudent.hostUniversity || null,
+        hostCountryCode: editingStudent.hostCountry || null,
+        programName: editingStudent.program || null,
+        semesterLabel: editingStudent.semester || null,
+        gpa: editingStudent.gpa,
+        status: editingStudent.status,
+        tenantId,
+      })
+
+      const mappedStudent = mapStudent(updated, countries)
+
+      setStudents(prev =>
+        prev.map(student =>
+          student.id === mappedStudent.id ? mappedStudent : student
+        )
+      )
+
+      setSelected(mappedStudent)
+      setShowEditModal(false)
+      setEditingStudent(null)
+      toast.success('Student updated')
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -283,7 +326,16 @@ export default function StudentsPage() {
                   <ChevronLeft size={13} /> Back
                 </button>
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button className="btn-ghost" style={{ padding: '5px 10px', fontSize: 12 }}><Edit3 size={13} /></button>
+                  <button
+                    className="btn-ghost"
+                    style={{ padding: '5px 10px', fontSize: 12 }}
+                    onClick={() => {
+                      setEditingStudent(selected)
+                      setShowEditModal(true)
+                    }}
+                  >
+                    <Edit3 size={13} />
+                  </button>
                   <button className="btn-danger" onClick={() => handleDeleteStudent(selected)} style={{ padding: '5px 10px', fontSize: 12 }}>
                     <Trash2 size={13} />
                   </button>
@@ -477,6 +529,157 @@ export default function StudentsPage() {
           </div>
         </div>
       )}
+
+  {showEditModal && editingStudent && (
+    <div
+      className="modal-overlay"
+      onClick={() => setShowEditModal(false)}
+    >
+      <div
+        className="modal-box"
+        onClick={e => e.stopPropagation()}
+      >
+        <div
+          style={{
+            padding: '22px 24px',
+            borderBottom: '1px solid var(--border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <h3
+            style={{
+              fontSize: 17,
+              fontWeight: 800,
+              color: 'var(--text-primary)',
+              fontFamily: 'var(--font-display)',
+            }}
+          >
+            Edit Student
+          </h3>
+
+          <button
+            onClick={() => setShowEditModal(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--text-muted)',
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div
+          style={{
+            padding: '24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+          }}
+        >
+          <input
+            className="nx-input"
+            placeholder="Full Name"
+            value={editingStudent.name}
+            onChange={e =>
+              setEditingStudent(prev =>
+                prev
+                  ? { ...prev, name: e.target.value }
+                  : prev
+              )
+            }
+          />
+
+          <input
+            className="nx-input"
+            placeholder="Email"
+            value={editingStudent.email}
+            onChange={e =>
+              setEditingStudent(prev =>
+                prev
+                  ? { ...prev, email: e.target.value }
+                  : prev
+              )
+            }
+          />
+
+          <input
+            className="nx-input"
+            placeholder="Host University"
+            value={editingStudent.hostUniversity}
+            onChange={e =>
+              setEditingStudent(prev =>
+                prev
+                  ? {
+                      ...prev,
+                      hostUniversity: e.target.value,
+                    }
+                  : prev
+              )
+            }
+          />
+
+          <input
+            className="nx-input"
+            placeholder="Semester"
+            value={editingStudent.semester}
+            onChange={e =>
+              setEditingStudent(prev =>
+                prev
+                  ? {
+                      ...prev,
+                      semester: e.target.value,
+                    }
+                  : prev
+              )
+            }
+          />
+
+          <select
+            className="nx-input"
+            value={editingStudent.status}
+            onChange={e =>
+              setEditingStudent(prev =>
+                prev
+                  ? {
+                      ...prev,
+                      status: e.target.value,
+                    }
+                  : prev
+              )
+            }
+          >
+            <option>Pending</option>
+            <option>Approved</option>
+            <option>On Exchange</option>
+            <option>Completed</option>
+          </select>
+
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button
+              className="btn-ghost"
+              style={{ flex: 1 }}
+              onClick={() => setShowEditModal(false)}
+            >
+              Cancel
+            </button>
+
+            <button
+              className="btn-primary"
+              style={{ flex: 1 }}
+              onClick={handleUpdateStudent}
+              disabled={saving}
+            >
+              {saving ? 'Updating...' : 'Update Student'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
     </AppShell>
   )
 }

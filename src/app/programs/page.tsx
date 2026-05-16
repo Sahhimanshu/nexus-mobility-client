@@ -6,6 +6,8 @@ import Topbar from '@/components/layout/Topbar'
 import { SectionCard, ProgressBar, StatMini } from '@/components/ui'
 import { Program } from '@/lib/data'
 import { getTenantId, programApi } from '@/lib/api'
+import { toast } from 'sonner'
+import { getErrorMessage } from '@/lib/error'
 import {
   Plus, Search, Award, Users, Calendar, X, Settings,
   Edit3, Trash2, ChevronLeft, BookOpen, MapPin,
@@ -210,7 +212,7 @@ export default function ProgramsPage() {
 
       } catch (err) {
 
-        console.error(err);
+        toast.error(getErrorMessage(err));
         setPrograms([]);
       }
     }
@@ -376,16 +378,18 @@ async function handleAddProgram() {
 
     setNewProgram(blankProgram())
     setAddError('')
+    toast.success('Program created successfully')
     setShowAddProgram(false)
 
   } catch (err) {
 
-    console.error('Failed to create program', err)
-    setAddError('Failed to create program.')
+    const message = getErrorMessage(err)
+    toast.error(message)
+    setAddError(message)
   }
 }
 async function handleSaveEdit() {
-
+console.log('Save edit')
   if (!editingProgram) return
 
   if (!editingProgram.name.trim()) {
@@ -443,14 +447,22 @@ async function handleSaveEdit() {
       )
     )
 
-    setSelected(mappedProgram)
-    setEditingProgram(null)
-    setEditError('')
+setSelected(mappedProgram)
+
+setEditingProgram(null)
+setEditError('')
+console.log('UPDATE SUCCESS 1')
+
+toast.success('Program updated successfully')
+
+console.log('UPDATE SUCCESS 2')
 
   } catch (err) {
 
-    console.error('Update failed', err)
-    setEditError('Failed to update program.')
+    const message = getErrorMessage(err)
+
+    toast.error(message)
+    setEditError(message)
   }
 }
 async function handleDelete(prog: Program) {
@@ -473,7 +485,7 @@ async function handleDelete(prog: Program) {
 
   } catch (err) {
 
-    console.error('Delete failed', err)
+    toast.error(getErrorMessage(err))
   }
 }
 

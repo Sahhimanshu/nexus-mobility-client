@@ -3,11 +3,13 @@ import { useEffect, useMemo, useState } from 'react'
 import AppShell from '@/components/layout/AppShell'
 import Topbar from '@/components/layout/Topbar'
 import { SectionCard, Badge, StatMini } from '@/components/ui'
-import { eventApi, getTenantId, type EventParticipantRecord, type EventRecord } from '@/lib/api'
+import { eventApi, formatEnumLabel, getTenantId, type EventParticipantRecord, type EventRecord } from '@/lib/api'
+import { getErrorMessage } from '@/lib/error'
 import {
   Plus, Calendar, MapPin, Users, Globe, X,
   ChevronLeft, Video, ExternalLink, Edit3, Trash2, UploadCloud,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface EventView {
   id: string
@@ -57,7 +59,7 @@ function mapEvent(record: EventRecord): EventView {
   today.setHours(0, 0, 0, 0)
   const todayMs = today.getTime()
   const status = eventTime < todayMs ? 'Completed' : eventTime <= todayMs + 7 * 24 * 60 * 60 * 1000 ? 'This Week' : 'Upcoming'
-  const displayType = record.type ? record.type.charAt(0) + record.type.slice(1).toLowerCase().replace(/_/g, ' ') : 'Event'
+  const displayType = record.type ? formatEnumLabel(record.type) : 'Event'
 
   return {
     id: record.id,
@@ -93,7 +95,7 @@ export default function EventsPage() {
         if (cancelled) return
         setEvents((page.content ?? []).map(mapEvent))
       } catch (error) {
-        console.error('Failed to fetch events', error)
+        toast.error(getErrorMessage(error))
         if (!cancelled) setEvents([])
       } finally {
         if (!cancelled) setLoading(false)
@@ -119,7 +121,7 @@ export default function EventsPage() {
         const data = await eventApi.participants(selectedId!)
         if (!cancelled) setParticipants(data)
       } catch (error) {
-        console.error('Failed to fetch participants', error)
+        toast.error(getErrorMessage(error))
         if (!cancelled) setParticipants([])
       }
     }
@@ -151,7 +153,7 @@ export default function EventsPage() {
       setShowAddModal(false)
       setNewEvent(defaultNewEvent)
     } catch (error) {
-      console.error('Create event failed', error)
+      toast.error(getErrorMessage(error))
     } finally {
       setSaving(false)
     }
@@ -164,8 +166,9 @@ export default function EventsPage() {
       if (selected?.id === event.id) {
         setSelected(null)
       }
+      toast.success('Event deleted')
     } catch (error) {
-      console.error('Delete event failed', error)
+      toast.error(getErrorMessage(error))
     }
   }
 
