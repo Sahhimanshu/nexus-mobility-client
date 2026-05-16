@@ -133,7 +133,7 @@ export default function VisitsPage() {
     try {
       const created = await visitApi.create({
         tenantId,
-        title: newVisit.title,
+        title: newVisit.title || `${newVisit.institutionName} Visit`,
         type: newVisit.type,
         status: newVisit.status,
         visitDate: newVisit.visitDate || null,
@@ -328,6 +328,8 @@ export default function VisitsPage() {
                 <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Institution</label>
                 <input className="nx-input" placeholder="e.g. University of Oxford" value={newVisit.institutionName} onChange={e => setNewVisit(prev => ({ ...prev, institutionName: e.target.value }))} style={{ width: '100%' }} />
               </div>
+              <div><label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Visit Title</label>
+              <input className="nx-input" placeholder="e.g. Strategic Partnership Meeting" value={newVisit.title} onChange={e => setNewVisit(prev => ({ ...prev, title: e.target.value }))} style={{ width: '100%' }} /></div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>Country / Location</label>
