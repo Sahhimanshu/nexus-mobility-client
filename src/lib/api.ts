@@ -6,7 +6,10 @@ let tenantBootstrapPromise: Promise<string | null> | null = null
 
 export interface ApiError {
   status: number
+  error?: string
+  message?: string
   detail: string
+  path?: string
   errors?: Record<string, string>
 }
 
@@ -304,6 +307,25 @@ export interface CountryStatInput {
   outboundStudents?: number | null
   inboundStudents?: number | null
   partnershipCount?: number | null
+}
+
+export interface TenantSettingsInput {
+  tenantId?: string
+  timezone?: string | null
+  currency?: string | null
+  locale?: string | null
+  contactEmail?: string | null
+  brandingColor?: string | null
+}
+
+export interface LiveNewsRecord {
+  title: string
+  url: string
+  source: string
+  summary: string
+  publishedAt: string
+  domain?: string
+  image?: string | null
 }
 
 export interface DashboardSnapshotRecord {
@@ -805,4 +827,84 @@ export const documentApi = {
   delete: (id: string) => apiFetch<void>(`/documents/${id}`, { method: 'DELETE' }),
 
   downloadUrl: (id: string) => `${BASE_URL}/documents/${id}/download`,
+
+}
+
+export const tenantApi = {
+  settings: (tenantId?: string) =>
+    apiFetch<TenantSettingsInput & { id?: string; createdAt?: string; updatedAt?: string }>('/tenant/settings', {}, {
+      tenantId,
+    }),
+
+  updateSettings: async (payload: TenantSettingsInput) =>
+    apiFetch<TenantSettingsInput & { id?: string; createdAt?: string; updatedAt?: string }>('/tenant/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(await withTenantBody(payload)),
+    }),
+}
+
+function toNewsArray(payload: any): any[] {
+  if (Array.isArray(payload)) return payload
+  if (Array.isArray(payload?.items)) return payload.items
+  if (Array.isArray(payload?.articles)) return payload.articles
+  if (Array.isArray(payload?.data)) return payload.data
+  return []
+}
+
+function normalizeLiveNewsItem(item: any): LiveNewsRecord {
+  const url = item?.url || item?.link || item?.sourceUrl || item?.source?.url || ''
+  let domain = item?.domain || item?.domainname || item?.source || ''
+
+  if (!domain && url) {
+    try {
+      domain = new URL(url).hostname.replace(/^www\./, '')
+    } catch {
+      domain = ''
+    }
+  }
+
+  const title = item?.title || item?.headline || item?.name || domain || 'Live news item'
+  const summary = item?.desc || item?.summary || item?.snippet || item?.description || ''
+  const publishedAt = item?.date || item?.seendate || item?.publishedAt || item?.pubDate || ''
+  const source = item?.outletName || item?.domain || item?.source || domain || 'GDELT'
+
+  return {
+    title,
+    url: url || '#',
+    source,
+    summary,
+    publishedAt,
+    domain: domain || undefined,
+    image: item?.image || item?.socialimage || null,
+  }
+}
+
+export const liveNewsApi = {
+  search: async (query = '("international students" OR scholarship OR university OR exchange)', limit = 12) => {
+    const url = new URL('https://api.gdeltproject.org/api/v2/doc/doc')
+    url.searchParams.set('query', query)
+    url.searchParams.set('mode', 'artlist')
+    url.searchParams.set('maxrecords', String(limit))
+    url.searchParams.set('timespan', '7d')
+    url.searchParams.set('sort', 'datedesc')
+    url.searchParams.set('format', 'json')
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw {
+        status: response.status,
+        detail: response.statusText,
+      } satisfies ApiError
+    }
+
+    const payload = await response.json().catch(() => null)
+    return toNewsArray(payload)
+      .map(normalizeLiveNewsItem)
+      .filter(item => item.title && item.url)
+  },
 }
