@@ -3,7 +3,7 @@ import './globals.css'
 import { Toaster } from 'sonner'
 
 export const metadata: Metadata = {
-  title: 'Nexus Mobility | International Education Platform',
+  title: 'Intersphere | International Education Platform',
   description: 'Manage global university partnerships, student mobility programs, and international collaborations.',
 }
 
