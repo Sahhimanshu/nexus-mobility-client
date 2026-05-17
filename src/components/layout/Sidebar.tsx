@@ -53,7 +53,7 @@ export default function Sidebar() {
             <div style={{
               fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 800,
               color: '#FFFFFF', letterSpacing: '-0.02em',
-            }}>Nexus</div>
+            }}>Intersphere</div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: -1 }}>Mobility Platform</div>
           </div>
         </div>
