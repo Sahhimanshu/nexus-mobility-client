@@ -1,4 +1,4 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://nexus-mobility-backend.onrender.com/api/v1'
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://intersphere-backend-m8d1.onrender.com/api/v1'
 const TENANT_ENV_KEY = 'NEXT_PUBLIC_TENANT_ID'
 const TENANT_STORAGE_KEY = 'nx_tenant'
 const TOKEN_STORAGE_KEY = 'nx_token'
